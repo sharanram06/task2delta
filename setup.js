@@ -1,6 +1,6 @@
-const openscreen = 1,
-	gameplay = 2,
-	closescreen = 3;
+const openscreen = 1;
+const gameplay = 2;
+const closescreen = 3;
 var state = openscreen;
 const canvas = document.getElementById('canvas');
 var ctx = canvas.getContext('2d');
@@ -19,6 +19,7 @@ var h = 780;
 var speed = 0;
 var g = 0;
 var createobs = true;
+rotspeed = 0.03;
 var calc = {
 	xax: function(x) {
 		return x + xw;
@@ -27,6 +28,24 @@ var calc = {
 		return y + yw;
 	}
 };
+var click=new Audio();
+click.src="click.wav"
+var bg = new Audio();
+bg.src = 'bg.mp3';
+bg.addEventListener(
+	'ended',
+	function() {
+		this.currentTime = 0;
+		this.play();
+	},
+	false
+);
+var move =new Audio();
+move.src="move.wav"
+if (!window.localStorage.hasOwnProperty('sco') || window.localStorage.getItem('sco') == undefined) {
+	console.log('shh');
+	window.localStorage.setItem('sco', 0);
+}
 var curr = 0;
 var pause = false;
 var change = [];
@@ -44,95 +63,100 @@ window.addEventListener('keydown', function(e) {
 		if (!pause) {
 			if (on === true) {
 				pause = true;
+				bg.pause()
 			}
 		} else {
 			if (on === true) {
 				pause = false;
 				g = 0.05;
+				bg.play()
 			}
 		}
 	}
 });
-function getRndInt(min, max) {
-	return Math.floor(Math.random() * (max - min + 1)) + min;
-}
 
 class Obstacle {
-	constructor(x_ax, y_ax) {
-		this.xpos = 230;
-		this.ypos = 0;
-
-		this.rot = 0;
-		this.w = 20;
-		this.h = 2;
-		this.speed = 0.005;
-
-		this.switched = false;
-		this.x_axis = x_ax;
-		this.y_axis = y_ax * -1;
-
-		this.next = y_ax + 220;
+	constructor(xax, yax) {
+		this.yo = 0;
+		this.rotate = 0;
+		this.next = 0;
+		this.star = false;
+		this.xax = xax;
+		this.yax = yax * -1;
+		this.xo = 250;
+		this.next = yax + 150;
 	}
-
 	draw() {
-		var rad = 360 / 400;
-		var color = 0;
-		for (var i = 0; i < 400; i++) {
-		this.ypos = calc.yax(this.y_axis);
-		var xx = 40 * Math.cos((40-this.rot) * (Math.PI / 180)) + this.xpos;
-		var yy = 40 * Math.sin((40-this.rot) * (Math.PI / 180)) + this.ypos
-		var rot = Math.atan2(yy - this.ypos, xx - this.xpos);
-		var tx = xh + radius  - xx+1.5;
-		var ty = yh + radius - yy -85	;
-		var d = Math.sqrt(tx * tx + ty * ty);
-
-			if (i < 100) {
-				color = 'violet';
-			} else if (i >= 100 && i < 200) {
+		var radian = 360 / 40;
+		var rotate = 0;
+		var color = '';
+		for (var i = 0; i < 40; i++) {
+			var xdis = 80 * Math.cos(this.rotate * (Math.PI / 180)) + this.xo;
+			var ydis = 80 * Math.sin(this.rotate * (Math.PI / 180)) + calc.yax(this.yax);
+			if (i < 10) {
 				color = 'cornflowerblue';
-			} else if (i >= 200 && i < 300) {
+			} else if (i >= 10 && i < 20) {
+				color = 'violet';
+			} else if (i >= 20 && i < 30) {
 				color = 'darkseagreen';
 			} else {
 				color = 'crimson';
 			}
-
-
-			if (d<=1) {
-			    if (colorb !== color ) {
-					console.log(color)
-					state=openscreen;
+			if (xdis <= xh && xdis + 10 >= xh && ydis <= yh && ydis + 10 >= yh) {
+				if (colorb !== color) {
+					state = openscreen;
+					location.reload();
+					if (curr > window.localStorage.getItem('sco')) {
+						window.localStorage.setItem('sco', curr);
+					}
 				}
 			}
-			ctx.save();
-			ctx.translate(xx + this.w, yy);
-			ctx.rotate(rot);
+			if (xdis <= xh + radius && xdis + 10 >= xh + radius && ydis <= yh + radius && ydis + 10 >= yh + radius) {
+				if (colorb !== color) {
+					state = openscreen;
+					location.reload();
+					if (curr > window.localStorage.getItem('sco')) {
+						window.localStorage.setItem('sco', curr);
+					}
+				}
+			}
 			ctx.fillStyle = color;
-			ctx.fillRect(this.w + 40, 0, this.w, this.h);
-			ctx.restore();
-
-			this.rot += rad + this.speed;
+			ctx.strokeStyle = color;
+			ctx.beginPath();
+			ctx.arc(xdis, ydis, 10, 0, Math.PI * 2, false);
+			ctx.stroke();
+			ctx.fill();
+			this.rotate += radian + rotspeed;
 		}
-		if (this.switched == false) {
+		if (this.star == false) {
 			ctx.save();
-			ctx.translate(xh, calc.yax(this.y_axis));
-			ctx.drawImage(img, 0, 0, 570, 430, -35, -20, 60, 40);
+			ctx.translate(xh, calc.yax(this.yax) + 7);
+			ctx.drawImage(img, 0, 0, 570, 430, -35, -28, 60, 40);
 			ctx.restore();
-			if (calc.yax(this.y_axis + 15) >= yh) {
-				this.switched = true;
+			if (calc.yax(this.yax) + 10 >= yh) {
+				this.star = true;
+				curr++;
+				click.play()
+				if (curr > 3 && curr <= 7) {
+					rotspeed = 0.05;
+				} else if (curr > 7 && curr <= 11) {
+					rotspeed = 0.08;
+				} else if (curr > 11 && curr <= 15) {
+					rotspeed = 1;
+				}
+
 				colorb = colors[Math.floor(Math.random() * colors.length)];
-				score++;
 			}
 		}
 	}
-	check(i) {
-		if (this.ypos - 160 > h) {
+	remove(i) {
+		if (calc.yax(this.yax) - 90 > h) {
 			obs.splice(i, 1);
 		}
 	}
 }
-
 obs.push(new Obstacle(0, 350));
-obs.push(new Obstacle(0, 750));
+obs.push(new Obstacle(0, 700));
 
 class Setup {
 	constructor() {
@@ -147,7 +171,6 @@ class Setup {
 		ctx.save();
 		ctx.fillStyle = colorb;
 		ctx.strokeStyle = colorb;
-		ctx.lineWidth = 0;
 		ctx.beginPath();
 		ctx.arc(xh, yh, radius, 0, Math.PI * 2, false);
 		ctx.stroke();
@@ -168,22 +191,26 @@ class Setup {
 		}
 
 		if (yh + radius >= h && off === false) {
+			ctx.clearRect(0, 0, w, h);
 			state = openscreen;
+			if (curr > window.localStorage.getItem('sco')) {
+				window.localStorage.setItem('sco', curr);
+			}
 			xh = 250;
 			yh = 650;
 			radius = 10;
 			colorb = colors[Math.floor(Math.random() * colors.length)];
-			off=true
-			on=false
+			off = true;
+			on = false;
+			location.reload();
 		}
 	}
 	obsdandc() {
-		//we loop it if ther i did not meet the condition and we draw the obstacles
 		for (var i = 0; i < obs.length; i++) {
 			obs[i].draw(i);
 		}
 		for (var i = 0; i < obs.length; i++) {
-			obs[i].check(i);
+			obs[i].remove(i);
 		}
 	}
 	createobs() {
@@ -198,19 +225,14 @@ class Setup {
 				case openscreen:
 					state = gameplay;
 					off = false;
+					bg.play();
 					break;
 				case gameplay:
 					g = 0;
 					speed = -4;
+					move.play()
 					on = true;
-					off=false
-					break;
-				case closescreen:
-					console.log(state);
-					var xh = 250;
-					var yh = 650;
-					state = openscreen;
-
+					off = false;
 					break;
 			}
 		});
@@ -232,16 +254,12 @@ class Setup {
 			case gameplay:
 				game.drawGamePlay();
 				break;
-			case closescreen:
-				game.drawCloseScreen();
-				break;
 		}
 		window.requestAnimationFrame(function() {
 			game.gameLoop();
 		});
 	}
 	drawOpenScreen() {
-		// ctx.clearRect(0, 0, canvas.width, canvas.height);
 		ctx.fillStyle = '#047bca';
 		ctx.fillRect(0, 0, canvas.width, canvas.height);
 		ctx.fillStyle = 'crimson';
@@ -255,37 +273,34 @@ class Setup {
 		ctx.fillText('3.Collecting stars will change the ', canvas.width / 2 - 200, 310);
 		ctx.fillText('color of the ball ', canvas.width / 2 - 200, 350);
 		ctx.fillText('4.Press Spacebar to pause the game', canvas.width / 2 - 200, 390);
+		ctx.fillText('5.The speed of the obstacles increases', canvas.width / 2 - 200, 430);
+		ctx.fillText('when you collect stars', canvas.width / 2 - 200, 470);
 		ctx.fillStyle = 'black';
 		ctx.font = '40px Fredoka One';
-		ctx.fillText('Click to Start', canvas.width / 2 - 130, 500);
+		ctx.fillText('Click to Start', canvas.width / 2 - 130, 560);
 		ctx.font = '50px Fredoka One';
-		ctx.fillText('Current Best:' + curr, canvas.width / 2 - 170, 600);
+		ctx.fillText('Current Best:' + window.localStorage.getItem('sco'), canvas.width / 2 - 170, 650);
 	}
 
 	drawGamePlay() {
 		if (!pause) {
-			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			ctx.clearRect(0, 0, w, h);
 			if (off === false) {
 				this.draw();
+				ctx.font = '20px Fredoka One';
+				ctx.fillStyle = 'white';
+				ctx.fillText('Score: ' + curr, 30, 40);
 			}
 
 			this.obsdandc();
-			// player_death_paticle_draw_();
 			if (calc.yax(obs[obs.length - 1].next * -1) >= 0) {
 				this.createobs();
 			}
 		}
-	}
-	drawCloseScreen() {
-		// ctx.clearRect(0, 0, canvas.width, canvas.height);
-		ctx.fillStyle = 'blue';
-		ctx.fillRect(0, 0, canvas.width, canvas.height);
-		ctx.fillStyle = 'white';
-		ctx.font = '40px Fredoka One';
-		ctx.fillText('Gameover', canvas.width / 2 - 130, canvas.height / 2);
 	}
 }
 window.onload = function() {
 	var game = new Setup();
 	game.start();
 };
+
