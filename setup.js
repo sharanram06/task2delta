@@ -137,12 +137,12 @@ class Obstacle {
 				this.star = true;
 				curr++;
 				click.play()
-				if (curr > 3 && curr <= 7) {
+				if (curr >= 3 && curr <= 7) {
 					rotspeed = 0.05;
 				} else if (curr > 7 && curr <= 11) {
 					rotspeed = 0.08;
-				} else if (curr > 11 && curr <= 15) {
-					rotspeed = 1;
+				} else if (curr > 11 ) {
+					rotspeed = 0.1;
 				}
 
 				colorb = colors[Math.floor(Math.random() * colors.length)];
